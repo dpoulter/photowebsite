@@ -14,9 +14,13 @@ public class Main {
 
     public static void main(String[] args) {
 
-        String subPath = "1940-1949";
-        String folderPath = "/Users/dalepoulter/Pictures/"+subPath;
-        String commentsFile=folderPath+"/photoComments.csv";
+        if(args.length != 2){
+            System.err.println("Usage: java Main [folderPath] [commentsFile]");
+            System.exit(1);
+        }
+
+        String folderPath = args[1];
+        String commentsFile = folderPath + args[2];
 
         // Read the photcomments file and build a list of photoComments
 
@@ -87,7 +91,7 @@ public class Main {
             }
         System.out.println(webPage);
 
-// Now outputs Opel instead of Volvo
+
     }
 
 
