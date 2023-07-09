@@ -13,18 +13,83 @@ public class Main {
 
 
     public static void main(String[] args) {
-
-        if(args.length != 2){
-            System.err.println("Usage: java Main [folderPath] [commentsFile]");
+        if(args.length != 1){
+            System.err.println("Usage: java Main [folderPath]");
             System.exit(1);
         }
+    
+        try {
+            // Walk through each subdirectory in the folderPath
+            Files.walk(Paths.get(args[0]))
+                    .filter(Files::isDirectory)
+                    .forEach(path -> {
+                        //String subPath = path.toString();
+                        String subPath = path.getFileName().toString();
 
-        String folderPath = args[1];
-        String commentsFile = folderPath + args[2];
+                        if(!path.toString().equals(args[0]))
+                        {
+                            System.out.println("subPath != arg[0]: subPath="+subPath+" args[0]="+args[0]);
+
+                            String commentsFile = path.toString() + "/photoComments.csv";
+        
+                            //Generate first section of webpage- which is a PHP page- modify as required.  
+        
+                            String webPage = "<!doctype html>" +
+                            "<html lang=\"en\">" +
+                            "<?php" +
+                            "+header(\"Cache-Control: no-cache, no-store, must-revalidate\"); // HTTP 1.1." +
+                            "header(\"Pragma: no-cache\"); // HTTP 1.0." +
+                            "header(\"Expires: 0\"); // Proxies." +
+                            "?>" +
+        
+                            "<?php require(\"header.html\");?>" + 
+        
+                            "<body class=\"bg-light\">" +
+        
+                            "<script src=\"https://code.jquery.com/jquery-3.3.1.slim.min.js\" integrity=\"sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo\" crossorigin=\"anonymous\"></script>" +
+                            "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js\" integrity=\"sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut\" crossorigin=\"anonymous\"></script>" +
+                            "<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js\" integrity=\"sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM\" crossorigin=\"anonymous\"></script>" +
+        
+                            "<section class=\"jumbotron text-center\">" +
+                                    "<div class=\"container\">" +
+                                    "<h1 class=\"jumbotron-heading\">" + subPath + "</h1>" +
+                                    "<p class=\"lead text-muted\">Click on the images to enlarge them.</p>" +
+                                    "</div>" +
+                                    "</section>" +
+                            "<div class=\"container\">";
+
+                            System.out.println("subPath = "+subPath);
+                            System.out.println("commentsFile = "+commentsFile);
+        
+                            webPage = webPage + "\n" + generate_for_folder(args[0],subPath,commentsFile) + 
+                                        "</div>" +
+                                        "</body>" +
+                                        "</html>";
+                            System.out.println(webPage);
+
+                            // Write the webpage to a file
+                            try (PrintWriter out = new PrintWriter(new FileWriter("photos " + subPath + ".php"))) {
+                                out.println(webPage);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static String generate_for_folder(String folderPath, String subPath, String commentsFile) {
+
+        //commentsFile = folderPath + "/" + commentsFile;
 
         // Read the photcomments file and build a list of photoComments
 
+       
+
         photoComments PhotoComments= new photoComments(commentsFile);
+
 
         //Read list of photos and build html
 
@@ -56,17 +121,20 @@ public class Main {
         int i=0;
         //System.out.println(cars[0]);
 
-        Path dir = Paths.get(folderPath);
+        Path dir = Paths.get(folderPath+"/"+subPath);
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path file: stream) {
                 //Metadata meta = new Metadata();
 
                 //meta.readAndDisplayMetadata( file.toFile() );
 
-               //System.out.println(file.getFileName());
-                photos[i]=file.getFileName().toString();
+               System.out.println("Filename="+file.getFileName().toString());
 
+               if(!(file.getFileName().toString().equals("photoComments.csv")||file.getFileName()==null)){
+                photos[i]=file.getFileName().toString();
                 i=i+1;
+               }
+                
             }
         } catch (IOException | DirectoryIteratorException x) {
             // IOException can never be thrown by the iteration.
@@ -89,9 +157,7 @@ public class Main {
                 }
             colCount++;
             }
-        System.out.println(webPage);
-
-
+        return (webPage);
     }
 
 

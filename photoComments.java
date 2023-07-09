@@ -56,9 +56,14 @@ public class photoComments {
             while ((row = csvReader.readLine()) != null) {
                 String[] data = row.split(",");
                 // do something with the data
-               // System.out.println("data: " + data[0]+","+data[1]);
-                listComments.add( new PhotoComment( data[0],data[1]));
+                if (data.length >= 2) {
+                    // Only add to list if there are at least two elements after splitting
+                    listComments.add(new PhotoComment(data[0], data[1]));
+                } else if (data.length == 1) {
+                    listComments.add(new PhotoComment(data[0], ""));
+                }
             }
+            
             csvReader.close();
 
         } catch (java.io.IOException e) {
