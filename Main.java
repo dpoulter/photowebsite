@@ -1,15 +1,10 @@
-
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import javax.imageio.metadata.*;
-import javax.imageio.*;
-import javax.imageio.stream.*;
-import org.w3c.dom.*;
-import java.io.*;
 import java.util.*;
 import java.util.stream.*;
+
 public class Main {
 
     // Only files with these extensions are treated as photos
@@ -42,6 +37,7 @@ public class Main {
 
             //Generate first section of webpage- which is a PHP page- modify as required.
             //The PHP block must come before any output, otherwise header() fails with "headers already sent".
+            //Bootstrap JS is 4.6.2; header.html must load the matching Bootstrap 4.6.2 CSS.
 
             String webPage = "<?php\n" +
             "header(\"Cache-Control: no-cache, no-store, must-revalidate\"); // HTTP 1.1.\n" +
@@ -55,9 +51,9 @@ public class Main {
 
             "<body class=\"bg-light\">\n" +
 
-            "<script src=\"https://code.jquery.com/jquery-3.3.1.slim.min.js\" integrity=\"sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo\" crossorigin=\"anonymous\"></script>\n" +
-            "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js\" integrity=\"sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut\" crossorigin=\"anonymous\"></script>\n" +
-            "<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js\" integrity=\"sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM\" crossorigin=\"anonymous\"></script>\n" +
+            "<script src=\"https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js\" integrity=\"sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj\" crossorigin=\"anonymous\"></script>\n" +
+            "<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js\" integrity=\"sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN\" crossorigin=\"anonymous\"></script>\n" +
+            "<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js\" integrity=\"sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+\" crossorigin=\"anonymous\"></script>\n" +
 
             "<section class=\"jumbotron text-center\">\n" +
                     "<div class=\"container\">\n" +
@@ -67,7 +63,7 @@ public class Main {
                     "</section>\n" +
             "<div class=\"container\">";
 
-            webPage = webPage + "\n" + generate_for_folder(path, subPath, commentsFile) +
+            webPage = webPage + "\n" + generateForFolder(path, subPath, commentsFile) +
                         "</div>\n" +
                         "</body>\n" +
                         "</html>";
@@ -83,10 +79,10 @@ public class Main {
         }
     }
 
-    public static String generate_for_folder(Path dir, String subPath, String commentsFile) {
+    public static String generateForFolder(Path dir, String subPath, String commentsFile) {
 
-        // Read the photcomments file and build a list of photoComments
-        photoComments PhotoComments= new photoComments(commentsFile);
+        // Read the photo comments file
+        PhotoComments comments = new PhotoComments(commentsFile);
 
         //Read list of photos (sorted so the page order is stable) and build html
         List<String> photos = new ArrayList<>();
@@ -107,8 +103,8 @@ public class Main {
 
         for (String photo : photos) {
 
-            //Find photcomments
-            String caption = PhotoComments.getComment(photo);
+            //Find photo comment
+            String caption = comments.getComment(photo);
             String url = escapeHtml(urlBase + encodeUrl(photo));
 
             //Build html
@@ -150,86 +146,5 @@ public class Main {
     // Encode a single path segment; URLEncoder is for query strings so turn "+" back into "%20"
     static String encodeUrl(String s) {
         return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
-    }
-
-
-
-    void readAndDisplayMetadata( Path file ) {
-        try {
-
-
-            ImageInputStream iis = ImageIO.createImageInputStream(file);
-            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
-
-            if (readers.hasNext()) {
-
-                // pick the first available ImageReader
-                ImageReader reader = readers.next();
-
-                // attach source to the reader
-                reader.setInput(iis, true);
-
-                // read metadata of first image
-                IIOMetadata metadata = reader.getImageMetadata(0);
-
-                String[] names = metadata.getMetadataFormatNames();
-                int length = names.length;
-                for (int i = 0; i < length; i++) {
-                    System.out.println( "Format name: " + names[ i ] );
-                    displayMetadata(metadata.getAsTree(names[i]));
-                }
-            }
-        }
-        catch (Exception e) {
-
-            e.printStackTrace();
-        }
-    }
-
-
-
-    void displayMetadata(Node root) {
-        displayMetadata(root, 0);
-    }
-
-    void indent(int level) {
-        for (int i = 0; i < level; i++)
-            System.out.print("    ");
-    }
-
-    void displayMetadata(Node node, int level) {
-        // print open tag of element
-        indent(level);
-        System.out.print("<" + node.getNodeName());
-        NamedNodeMap map = node.getAttributes();
-        if (map != null) {
-
-            // print attribute values
-            int length = map.getLength();
-            for (int i = 0; i < length; i++) {
-                Node attr = map.item(i);
-                System.out.print(" " + attr.getNodeName() +
-                        "=\"" + attr.getNodeValue() + "\"");
-            }
-        }
-
-        Node child = node.getFirstChild();
-        if (child == null) {
-            // no children, so close element and return
-            System.out.println("/>");
-            return;
-        }
-
-        // children, so close current tag
-        System.out.println(">");
-        while (child != null) {
-            // print children recursively
-            displayMetadata(child, level + 1);
-            child = child.getNextSibling();
-        }
-
-        // print close tag of element
-        indent(level);
-        System.out.println("</" + node.getNodeName() + ">");
     }
 }

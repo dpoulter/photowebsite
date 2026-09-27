@@ -1,60 +1,36 @@
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class photoComments {
+public class PhotoComments {
 
     //Read the comments from the input file which is a file containing a list of filenames and corresponding comments
     //of that filename  eg.  BeachHoliday1.jpg,First day of our beach holiday
-    //File will be stored in PhotoComment class
 
+    private final Map<String, String> comments;
 
-    List<PhotoComment> listComments;
-
-    public photoComments (String filename){
-
-
-        listComments = readFile(filename);
-
-        Collections.sort(listComments);
-
-
-
+    public PhotoComments(String filename) {
+        comments = readFile(filename);
     }
 
-    public String getComment (String filename){
-
-        PhotoComment findPhoto = new PhotoComment(filename);
-
-        int index = Collections.binarySearch(listComments, findPhoto);
-
-       // System.out.println("index: " + index);
-
-        if (index >= 0) {
-            findPhoto = listComments.get(index);
-           // System.out.println("Found photo comment: " + findPhoto.comment);
-        }else{
-            findPhoto = new PhotoComment(filename,"");
-        }
-
-
-        return findPhoto.comment;
+    // Returns the comment for a photo, or an empty string if it has none
+    public String getComment(String filename) {
+        return comments.getOrDefault(filename, "");
     }
 
+    private static Map<String, String> readFile(String pathToCsv) {
 
-     private static List<PhotoComment> readFile(String pathToCsv){
-
-        List<PhotoComment> listComments = new ArrayList<>();
+        Map<String, String> comments = new HashMap<>();
 
         if (!Files.exists(Paths.get(pathToCsv))) {
             System.err.println("No comments file found: " + pathToCsv);
-            return listComments;
+            return comments;
         }
 
         String row;
@@ -63,7 +39,7 @@ public class photoComments {
             boolean firstRow = true;
             while ((row = csvReader.readLine()) != null) {
                 // Excel saves UTF-8 CSVs with a byte order mark at the start of the file
-                if (firstRow && row.startsWith("\uFEFF")) {
+                if (firstRow && row.startsWith("﻿")) {
                     row = row.substring(1);
                 }
                 firstRow = false;
@@ -74,13 +50,16 @@ public class photoComments {
                 if (photo.isEmpty()) {
                     continue;
                 }
-                listComments.add(new PhotoComment(photo, data.length == 2 ? data[1].trim() : ""));
+                String comment = data.length == 2 ? data[1].trim() : "";
+                if (comments.put(photo, comment) != null) {
+                    System.err.println("Duplicate entry for " + photo + " in " + pathToCsv + "; using the last one");
+                }
             }
 
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             System.err.println("Unable to read comments file " + pathToCsv + ": " + e);
         }
 
-        return listComments;
+        return comments;
     }
 }
