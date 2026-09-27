@@ -1,5 +1,9 @@
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,26 +52,33 @@ public class photoComments {
 
         List<PhotoComment> listComments = new ArrayList<>();
 
-        BufferedReader csvReader = null;
-        String row;
-        try {
-            csvReader = new BufferedReader(new FileReader(pathToCsv));
+        if (!Files.exists(Paths.get(pathToCsv))) {
+            System.err.println("No comments file found: " + pathToCsv);
+            return listComments;
+        }
 
+        String row;
+        try (BufferedReader csvReader = new BufferedReader(new InputStreamReader(new FileInputStream(pathToCsv), StandardCharsets.UTF_8))) {
+
+            boolean firstRow = true;
             while ((row = csvReader.readLine()) != null) {
-                String[] data = row.split(",");
-                // do something with the data
-                if (data.length >= 2) {
-                    // Only add to list if there are at least two elements after splitting
-                    listComments.add(new PhotoComment(data[0], data[1]));
-                } else if (data.length == 1) {
-                    listComments.add(new PhotoComment(data[0], ""));
+                // Excel saves UTF-8 CSVs with a byte order mark at the start of the file
+                if (firstRow && row.startsWith("\uFEFF")) {
+                    row = row.substring(1);
                 }
+                firstRow = false;
+
+                // Split on the first comma only, so comments may contain commas
+                String[] data = row.split(",", 2);
+                String photo = data[0].trim();
+                if (photo.isEmpty()) {
+                    continue;
+                }
+                listComments.add(new PhotoComment(photo, data.length == 2 ? data[1].trim() : ""));
             }
-            
-            csvReader.close();
 
         } catch (java.io.IOException e) {
-            e.printStackTrace();
+            System.err.println("Unable to read comments file " + pathToCsv + ": " + e);
         }
 
         return listComments;
