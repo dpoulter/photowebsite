@@ -96,10 +96,9 @@ public class Main {
             System.err.println("Unable to read folder " + dir + ": " + x);
         }
 
-        String divRow="<div class=\"row\">\n" ;
-        String webPage=divRow;
+        // One Bootstrap 4 row of cards; the grid wraps them 1 per row on phones, 2 on tablets, 3 on desktops
+        StringBuilder webPage = new StringBuilder("<div class=\"row\">\n");
         String urlBase = "/images/" + encodeUrl(subPath) + "/";
-        int colCount=0;
 
         for (String photo : photos) {
 
@@ -108,26 +107,23 @@ public class Main {
             String url = escapeHtml(urlBase + encodeUrl(photo));
 
             //Build html
-            String divCol =
-                    "    <div class=\"col-md-4\">\n" +
-                    "      <div class=\"thumbnail\">\n" +
-                    "        <a href=\"" + url + "\" target=\"_blank\">\n" +
-                    "          <img src=\"" + url + "\" alt=\"" + escapeHtml(photo) + "\" style=\"width:100%\">\n" +
-                    "        </a>\n" +
-                    "        <div class=\"caption\"><p>" + escapeHtml(caption) + "</p>\n" +
-                    "        </div>\n" +
-                    "      </div>\n" +
-                    "    </div>";
-
-            // Start a new row after every 3 photos
-            if (colCount > 0 && colCount % 3 == 0) {
-                webPage = webPage + "\n</div>\n" + divRow + divCol;
-            } else {
-                webPage = webPage + "\n" + divCol;
+            webPage.append(
+                    "  <div class=\"col-sm-6 col-md-4 mb-4\">\n" +
+                    "    <div class=\"card h-100 shadow-sm\">\n" +
+                    "      <a href=\"" + url + "\" target=\"_blank\">\n" +
+                    "        <img class=\"card-img-top\" src=\"" + url + "\" alt=\"" + escapeHtml(photo) + "\" loading=\"lazy\">\n" +
+                    "      </a>\n");
+            if (!caption.isEmpty()) {
+                webPage.append(
+                    "      <div class=\"card-body\">\n" +
+                    "        <p class=\"card-text\">" + escapeHtml(caption) + "</p>\n" +
+                    "      </div>\n");
             }
-            colCount++;
+            webPage.append(
+                    "    </div>\n" +
+                    "  </div>\n");
         }
-        return webPage + "\n</div>\n";
+        return webPage.append("</div>\n").toString();
     }
 
     static boolean isImage(String filename) {
